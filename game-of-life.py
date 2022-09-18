@@ -23,6 +23,11 @@ fpsClock = pygame.time.Clock()
 screen_width, screen_height = 800, 600
 screen = pygame.display.set_mode((screen_width, screen_height))
 
+# Screen Title and Icon
+pygame.display.set_caption("Game of Life")
+img = pygame.image.load("icon.png")
+pygame.display.set_icon(img)
+
 # Colors
 BLACK   = (0,0,0)
 GREY    = (25,25,25)
