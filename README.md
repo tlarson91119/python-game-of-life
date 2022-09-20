@@ -19,8 +19,8 @@ One of my next goals is to write this for Linux, using Bash, which should be tri
 
 	+ +/- keys speed/slow the simulation speed (FPS cap remains at 60)
 
-	+ Ability to save (s) and restore (s) the board state. On start, the initial random
+	+ Ability to save (s) and restore (r) the board state. On start, the initial random
 		board state is saved automatically.
 
-	+ Save board state in binary format (Ctrl+s)
+	+ Save board state (ctrl+s) in binary format (Ctrl+s)
 		-Still need to create file load function
