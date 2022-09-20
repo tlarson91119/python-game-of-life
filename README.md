@@ -8,9 +8,9 @@ There's not too much else I can think of to add to it except try to clean up the
 One of my next goals is to write this for Linux, using Bash, which should be tricky enough.
 
 2022-09-19:
-	- Cleaned up mouse/cursor grid-snapping functionality
+	+ Cleaned up mouse/cursor grid-snapping functionality
 
-	- Cleaned up dead_board function
+	+ Cleaned up dead_board function
 	
 	+ clear screen with "c" key
 
