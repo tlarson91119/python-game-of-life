@@ -22,5 +22,5 @@ One of my next goals is to write this for Linux, using Bash, which should be tri
 	+ Ability to save (s) and restore (r) the board state. On start, the initial random
 		board state is saved automatically.
 
-	+ Save board state (ctrl+s) in binary format (Ctrl+s)
+	+ Save board state (ctrl+s) in binary format
 		-Still need to create file load function
