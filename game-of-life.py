@@ -1,12 +1,17 @@
 #   Game of Life
-#   - The size of the board may be changed by adusting the cell size (line )
-#   - generations (line ) sets max iterations and a value of 0 or below will let it
-#       run indefinitely
-#
-#   I've played around with the cell size and screen dimensions and it runs without much
-#       trouble. At greater board sizes (smaller cells), the performance will suffer.
+
+#   CONTROLS:
+#   - +/- keys increase/decrease the simulation speed
+#   - Spacebar will pause/resume simulation
+#   - "c", when paused, will clear the board
+#   - "s", save board state
+#   - "r", restore from last save
+#   - "Control+s" save to file (board<#>.dat)
 
 import sys
+import os.path
+
+import struct
 import random
 import math
 import time
@@ -18,9 +23,10 @@ pygame.init()
 # Target Framerate
 fps = 60
 fpsClock = pygame.time.Clock()
+gameDelay = 0.125;
 
 # Screen Dimensions
-screen_width, screen_height = 800, 600
+screen_width, screen_height = 640, 480 
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 # Screen Title and Icon
@@ -30,14 +36,17 @@ pygame.display.set_icon(img)
 
 # Colors
 BLACK   = (0,0,0)
-GREY    = (25,25,25)
+GREY    = (0,25,25)
 GREEN   = (0,255,15)
-RED     = (125,0,0)
+RED     = (175,0,0)
 ########################################
 #           Game Of Life Code          #
 ########################################
 cellSize = 8            # Size of the sells in pixels
 generations = 1000      # Number of iterations
+
+mouseDown = False           # True when mouse button pressed (False when released)
+prevMousePosition = (0, 0)  # For drawing functionality
 
 # Generate a random bit value
 def randomBit():
@@ -56,31 +65,44 @@ def random_state(w, h):
 
 # Returns an empty board
 def dead_state(w, h):
-    dead_board = []
-    for i in range(h):
-        rowList = []
-        for j in range(w):
-            rowList.append(0)
-        dead_board.append(rowList)
+    dead_board = [[0 for i in range(w)] for j in range(h)]
     return dead_board
+
+# Save the boards current state (press r when paused to restore)
+def save_state(board):
+    return board
+
+def save_to_file(board):
+    i = 0
+    # Check if files exist
+    while os.path.exists("board%s.dat" % i):
+        i += 1
+    fname = "board%s.dat" % i
+
+    with open(fname, "wb") as f:
+        for row in board:
+            for col in row:
+                newByte = bytearray(col)
+                f.write(struct.pack("?", newByte))     
 
 # Calculate Next Board State
 def next_board_state(board):
     board_width     = len(board[0])
     board_height    = len(board)
+    h = board_height - 1      # Subtract one to avoid out of range indexes
+    w = board_width - 1
     new_board = [[0 for i in range(board_width)] for j in range(board_height)]
-    h = len(board) - 1      # Subtract one to avoid out of range indexes
-    w = len(board[0]) - 1
+
     neighbors = 0
 
     # Iterate through each cell
-    for y in range( len(board)):
-        for x in range( len(board[y])):
+    for y in range( board_height ):
+        for x in range( board_width ):
             neighbors = 0
 
-            if (x > 0 and y > 0) and (board[y-1][x-1] == 1):    # Top-Left
+            if (x > 0 and y > 0) and (board[y-1][x-1] == 1):# Top-Left
                 neighbors += 1
-
+            
             if (y > 0) and (board[y-1][x] == 1):            # Top
                 neighbors += 1
 
@@ -135,25 +157,25 @@ def render(state):
         print("Error (render): argument is not a list...")
         return 1
 
-def getGridPosition(mouse):
-    mouseX, mouseY = mouse
+def getGridPosition():
+    # Snapping mouse cursor to the grid
+    mouseX, mouseY = pygame.mouse.get_pos()
     gridX = math.floor(mouseX / cellSize) * cellSize
     gridY = math.floor(mouseY / cellSize) * cellSize
     return gridX, gridY # return grid position as a tuple
 
-def drawCursor(mouse):
-    gridX, gridY = getGridPosition(mouse)
+def drawCursor():
+    # Get grid-snapped cursor position
+    gridX, gridY = getGridPosition()
+
     cell = pygame.Rect( gridX-1, gridY-1, cellSize+3, cellSize+3 )
     if gridX >= 0 and gridX <= screen_width:
         if gridY >= 0 and gridY <= screen_height:
             pygame.draw.rect(screen, RED, cell, 2)
-            # Debug: Print grid cursor position
-            # print("GridPosition:",  str(int(gridX / cellSize)) + "x" +
-            #                         str(int(gridY / cellSize)) )
 
 # Toggle grid cells for specified board. mouse argument expects -
 #   returned tuple from getGridPosition()
-def toggleCell( board, mouse ):
+def toggleCell( board, mouse,  ):
     x, y = mouse
     x = int(x / cellSize)
     y = int(y / cellSize)
@@ -166,6 +188,9 @@ def toggleCell( board, mouse ):
 
 # Initialize Game of Life Board with a random state
 board_state = random_state(round(screen_width/cellSize), round(screen_height/cellSize))
+saved_state = save_state(board_state)
+
+
 currentGeneration = 0   # Infinite iterations if <= 0
 running = True
 
@@ -185,10 +210,50 @@ while True:
                     running = False
                 else:
                     running = True
+            # Increase simulation speed
+            if event.key == pygame.K_MINUS:
+                if gameDelay > 0:
+                    gameDelay -= 0.03125
+                    print("Delay:", gameDelay)
+            # Decrease speed
+            if event.key == pygame.K_EQUALS:
+                if gameDelay < 1:
+                    gameDelay += 0.03125
+                    print("Delay:", gameDelay)
+            # Close simulation
+            if event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()
         # If simulation is paused, accept mouse input
-        if event.type == pygame.MOUSEBUTTONDOWN and running == False:
+        if running == False:
             # Toggle cell
-            toggleCell(board_state, getGridPosition(pygame.mouse.get_pos()))
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # toggleCell(board_state, getGridPosition())
+                mouseDown = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                mouseDown = False
+            # Handle key presses
+            if event.type == pygame.KEYDOWN:
+                # Clear the game board
+                if event.key == pygame.K_c:
+                    print("Board was cleared")
+                    board_state = dead_state(
+                        round(screen_width/cellSize),
+                        round(screen_height/cellSize)
+                    )
+                # Save current board state
+                if event.key == pygame.K_s:
+                    print("Board state saved")
+                    saved_state = save_state(board_state)
+                # Restore saved board state
+                if event.key == pygame.K_r:
+                    print("Restored board from save")
+                    board_state = saved_state
+                # Load state from file
+                if event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    print("Saved board state to board<#>.dat")
+                    save_to_file(board_state)
+
     if running:
         screen.fill(BLACK)
         render(board_state)
@@ -200,11 +265,18 @@ while True:
             board_state = next_board_state(board_state)
             currentGeneration += 1
         
-        time.sleep(0.125)
+        time.sleep( gameDelay )
     else:
         # When simulation is paused, allow editing of the board
         render(board_state)
-        drawCursor( getGridPosition(pygame.mouse.get_pos()) )
+        if mouseDown == True:
+            # Compare current cursor position with previous to avoid repeadly toggling
+            #   the same cell.
+            if getGridPosition() != prevMousePosition:
+                toggleCell(board_state, getGridPosition())
+            prevMousePosition = getGridPosition()
+        
+        drawCursor()
     
     # Update the Screen
     pygame.display.flip()
